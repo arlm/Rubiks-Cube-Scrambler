@@ -1,7 +1,8 @@
 #include <iostream>
 #include <fstream>
-#include <windows.h>
-#include <winuser.h>
+#include <termios.h>
+#include <unistd.h>
+#include <fcntl.h>
 #include <cstdlib>
 #include <ctime>
 #include <cstdio>
@@ -13,22 +14,63 @@ constexpr char moveSpecSet[] = {' ', '2', char(39)};	   // Move-set specialisati
 constexpr int highestScrambleLength = 25;				   // Highest scramble length
 constexpr int lowestScrambleLength = 20;				   // Lowest scramble length
 
+// Function to set terminal to raw mode
+inline void set_raw_mode()
+{
+    struct termios tty;
+    tcgetattr(STDIN_FILENO, &tty);
+    tty.c_lflag &= ~(ICANON | ECHO);  // Disable canonical mode and echo
+    tty.c_cc[VMIN] = 1;               // Minimum number of characters for noncanonical read
+    tty.c_cc[VTIME] = 0;              // No timeout
+    tcsetattr(STDIN_FILENO, TCSANOW, &tty);
+}
+
+// Function to reset terminal to normal mode
+inline void reset_terminal_mode()
+{
+    struct termios tty;
+    tcgetattr(STDIN_FILENO, &tty);
+    tty.c_lflag |= (ICANON | ECHO);   // Enable canonical mode and echo
+    tcsetattr(STDIN_FILENO, TCSANOW, &tty);
+}
+
+// Function to check if a key is pressed
+inline bool is_key_pressed(char key)
+{
+  //  int oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
+  //  fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK);
+
+    int ch = getchar();
+
+  //  fcntl(STDIN_FILENO, F_SETFL, oldf);
+
+    if (ch != EOF)
+    {
+        if (ch == key)
+        {
+            return true;
+        }
+        ungetc(ch, stdin);
+    }
+    return false;
+}
+
 inline bool spacePressed()
 {
 	// Return false if spacebar is pressed else true
-	return (GetAsyncKeyState(VK_SPACE) == 0) ? false : true;
+    return !is_key_pressed(' ');
 }
 
 inline bool rPressed()
 {
 	// Return false if R is pressed else true
-	return (GetAsyncKeyState(0x52) == 0) ? false : true;
+    return !is_key_pressed('r');
 }
 
 inline bool ePressed()
 {
 	// Return false if E is pressed else true
-	return (GetAsyncKeyState(0x45) == 0) ? false : true;
+    return !is_key_pressed('e');
 }
 
 inline void doNothing()
@@ -71,6 +113,8 @@ char getOppositeMove(char move)
 	{
 		return 'F';
 	}
+
+	return '-';
 }
 
 std::vector<char> scrambler()
@@ -144,6 +188,9 @@ std::vector<char> scrambler()
 
 double phaseOne()
 {
+	set_raw_mode();
+	atexit(reset_terminal_mode); // Ensure terminal settings are reset on exit
+
 	// This function is solely responsible for calculating time passed between solve
 	clock_t initialTime = 0; // This variable holds initial time
 	clock_t finalTime = 0;	 // This variable holds final time
@@ -169,6 +216,8 @@ double phaseOne()
 		std::cout << "Time passed is " << double(double(finalTime - initialTime) / double(CLOCKS_PER_SEC));
 		return double(double(finalTime - initialTime) / double(CLOCKS_PER_SEC));
 	}
+
+	return 0.0;
 }
 
 void phaseTwo()
@@ -233,7 +282,7 @@ void runTimer(char *scrambleArray)
 		// Prints scramble
 		std::cout << scramble.at(i);
 	}
-	std::cout << "\n";
+	std::cout << "\n\n";
 	while (rPressed() == false && spacePressed() == false && ePressed() == false)
 	{
 		// While r is not pressed, space is not pressed and e is not pressed, do nothing

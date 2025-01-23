@@ -3,8 +3,6 @@
     Credits: "https://www.flaticon.com/free-icons/rubik"
 */
 #include <iostream>
-#include <windows.h>
-#include <winuser.h>
 #include <cstdlib>
 #include <ctime>
 #include <cstdio>
