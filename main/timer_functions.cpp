@@ -3,10 +3,7 @@
 #ifdef _WIN32
 	#include <windows.h>
 	#include <winuser.h>
-#elif __APPLE__
-	#include <termios.h>
-	#include <unistd.h>
-#elif __linux__
+#else
 	#include <termios.h>
 	#include <unistd.h>
 #endif
@@ -22,7 +19,7 @@ constexpr char moveSpecSet[] = {' ', '2', char(39)};	   // Move-set specialisati
 constexpr int highestScrambleLength = 25;				   // Highest scramble length
 constexpr int lowestScrambleLength = 20;				   // Lowest scramble length
 
-#ifdef __APPLE__
+#ifndef _WIN32
 // Function to set terminal to raw mode
 inline void set_raw_mode()
 {
@@ -70,9 +67,7 @@ inline bool spacePressed()
 	// Return false if spacebar is pressed else true
 #ifdef _WIN32
     return (GetAsyncKeyState(VK_SPACE) == 0) ? false : true;
-#elif __APPLE__
-    return !is_key_pressed(' ');
-#elif __linux__
+#else
     return !is_key_pressed(' ');
 #endif
 
@@ -84,9 +79,7 @@ inline bool rPressed()
 
 #ifdef _WIN32
 	return (GetAsyncKeyState(0x52) == 0) ? false : true;
-#elif __APPLE__
-     return !is_key_pressed('r');
-#elif __linux__
+#else
     return !is_key_pressed('r');
 #endif	
 }
@@ -97,9 +90,7 @@ inline bool ePressed()
 
 #ifdef _WIN32
 	return (GetAsyncKeyState(0x45) == 0) ? false : true;
-#elif __APPLE__
-    return !is_key_pressed('e');
-#elif __linux__
+#else
     return !is_key_pressed('e');
 #endif	
 }
