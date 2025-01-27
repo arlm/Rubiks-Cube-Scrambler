@@ -242,8 +242,73 @@ double phaseOne()
 	return 0.0;
 }
 
-void phaseTwo()
+void runTimer(char *scrambleArray)
 {
+	// printScramble(scrambleArray);
+	srand(time(0));
+	std::vector<char> scramble = scrambler();
+	double timeTaken;
+	for (int i = 0; i < scramble.size(); i++)
+	{
+		// Prints scramble
+		std::cout << scramble.at(i);
+	}
+	std::cout << "\n\n";
+
+	while (rPressed() == false && spacePressed() == false && ePressed() == false)
+	{
+		// While r is not pressed, space is not pressed and e is not pressed, do nothing
+		doNothing();
+	}
+	while (rPressed() == true && ePressed() == false && spacePressed() == false)
+	{
+		// While r is pressed, space is not pressed and e is not pressed, do nothing
+		doNothing();
+	}
+	if (rPressed() == false && ePressed() == false && spacePressed() == false)
+	{
+		// After releasing r, clear screen and return to main()
+		system("cls");
+	}
+	while (ePressed() == false && spacePressed() == false && rPressed() == false)
+	{
+		// While e is pressed, space is not pressed, r is not pressed, do nothing
+		doNothing();
+	}
+	if (ePressed() == true && spacePressed() == false && rPressed() == false)
+	{
+		// If e is pressed, the program will stop execution
+		exit(0);
+	}
+
+	while (spacePressed() == false)
+	{
+		// Until space bar is not pressed keep doing nothing
+		doNothing();
+	}
+	if (spacePressed() == true)
+	{
+		// As soon as space is pressed enter this if condition
+		std::cout << "Space pressed!" << std::endl;
+		while (spacePressed() == true)
+		{
+			// Once this loop is entered it will keep doing nothing until space is pressed
+			doNothing();
+		}
+	}
+
+	// The below code pushes scramble and solve to external file for more calculations
+	timeTaken = phaseOne();
+	std::ofstream file;
+	file.open("main/times.txt", std::ios::app);
+	for (int i = 0; i < scramble.size(); i++)
+	{
+		file << scramble.at(i);
+	}
+	file << ":: " << timeTaken << "s"
+		 << "\n";
+	file.close();
+
 	// std::cout << "Inside phaseTwo() timer" << std::endl;
 	while (true)
 	{
@@ -268,83 +333,6 @@ void phaseTwo()
 			}
 			// Clear terminal after doing all this
 			system("cls");
-			return; // Go back to runTimer()
 		}
 	}
-}
-
-void beforeTimerRuns()
-{
-	while (spacePressed() == false)
-	{
-		// Until space bar is not pressed keep doing nothing
-		doNothing();
-	}
-	if (spacePressed() == true)
-	{
-		// As soon as space is pressed enter this if condition
-		std::cout << "Space pressed!" << std::endl;
-		while (spacePressed() == true)
-		{
-			// Once this loop is entered it will keep doing nothing until space is pressed
-			doNothing();
-		}
-		return;
-	}
-}
-
-void runTimer(char *scrambleArray)
-{
-	// printScramble(scrambleArray);
-	srand(time(0));
-	std::vector<char> scramble = scrambler();
-	double timeTaken;
-	for (int i = 0; i < scramble.size(); i++)
-	{
-		// Prints scramble
-		std::cout << scramble.at(i);
-	}
-	std::cout << "\n\n";
-	while (rPressed() == false && spacePressed() == false && ePressed() == false)
-	{
-		// While r is not pressed, space is not pressed and e is not pressed, do nothing
-		doNothing();
-	}
-	while (rPressed() == true && ePressed() == false && spacePressed() == false)
-	{
-		// While r is pressed, space is not pressed and e is not pressed, do nothing
-		doNothing();
-	}
-	if (rPressed() == false && ePressed() == false && spacePressed() == false)
-	{
-		// After releasing r, clear screen and return to main()
-		system("cls");
-		return;
-	}
-	while (ePressed() == false && spacePressed() == false && rPressed() == false)
-	{
-		// While e is pressed, space is not pressed, r is not pressed, do nothing
-		doNothing();
-	}
-	if (ePressed() == true && spacePressed() == false && rPressed() == false)
-	{
-		// If e is pressed, the program will stop execution
-		exit(0);
-	}
-
-	beforeTimerRuns();
-
-	// The below code pushes scramble and solve to external file for more calculations
-	timeTaken = phaseOne();
-	std::ofstream file;
-	file.open("main/times.txt", std::ios::app);
-	for (int i = 0; i < scramble.size(); i++)
-	{
-		file << scramble.at(i);
-	}
-	file << ":: " << timeTaken << "s"
-		 << "\n";
-	file.close();
-
-	phaseTwo();
 }
