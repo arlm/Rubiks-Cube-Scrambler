@@ -21,34 +21,30 @@ constexpr int lowestScrambleLength = 20;				   // Lowest scramble length
 
 #ifndef _WIN32
 // Function to set terminal to raw mode
-inline void set_raw_mode()
+inline void configureTerminal(struct termios &original)
 {
-    struct termios tty;
-    tcgetattr(STDIN_FILENO, &tty);
-    tty.c_lflag &= ~(ICANON | ECHO);  // Disable canonical mode and echo
-    tty.c_cc[VMIN] = 1;               // Minimum number of characters for noncanonical read
-    tty.c_cc[VTIME] = 0;              // No timeout
-    tcsetattr(STDIN_FILENO, TCSANOW, &tty);
+    struct termios newSettings;
+    tcgetattr(STDIN_FILENO, &original);
+	newSettings = original;
+    newSettings.c_lflag &= ~(ICANON | ECHO);  // Disable canonical mode and echo
+    tcsetattr(STDIN_FILENO, TCSANOW, &newSettings);
 }
 
 // Function to reset terminal to normal mode
-inline void reset_terminal_mode()
+inline void resetTerminal(struct termios &original)
 {
-    struct termios tty;
-    tcgetattr(STDIN_FILENO, &tty);
-    tty.c_lflag |= (ICANON | ECHO);   // Enable canonical mode and echo
-    tcsetattr(STDIN_FILENO, TCSANOW, &tty);
+	tcsetattr(STDIN_FILENO, TCSANOW, &original);
 }
 
 // Function to check if a key is pressed
 inline bool is_key_pressed(char key)
 {
-  //  int oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
-  //  fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK);
+    int oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
+    fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK);
 
     int ch = getchar();
 
-  //  fcntl(STDIN_FILENO, F_SETFL, oldf);
+    fcntl(STDIN_FILENO, F_SETFL, oldf);
 
     if (ch != EOF)
     {
@@ -93,11 +89,6 @@ inline bool ePressed()
 #else
     return !is_key_pressed('e');
 #endif	
-}
-
-inline void doNothing()
-{
-	// Does as its name
 }
 
 inline int randomNum(int lowerLimit, int upperLimit)
@@ -210,129 +201,149 @@ std::vector<char> scrambler()
 
 double phaseOne()
 {
-	set_raw_mode();
-	atexit(reset_terminal_mode); // Ensure terminal settings are reset on exit
-
 	// This function is solely responsible for calculating time passed between solve
 	clock_t initialTime = 0; // This variable holds initial time
 	clock_t finalTime = 0;	 // This variable holds final time
 
-	std::cout << "Solve!" << std::endl;
 	initialTime = clock(); // Assigning initial time
+	hideCursor();
 
-	while (spacePressed() == false)
+	while (true)
 	{
-		// This spacePressed()==false will ensure to do nothing if space is not pressed.
-		doNothing();
-	}
-	if (spacePressed() == true)
-	{
-		// As soon as space is pressed
-		finalTime = clock(); // Record time after solve
-		while (spacePressed() == true)
+		if (spacePressed() == false) 
 		{
-			// Keep doing nothing after once time has been captured and space is kept pressed
-			doNothing();
+			if (finalTime == 0)
+			{
+				// As soon as space is pressed enter this if condition
+				std::cout << "Start!" << std::endl;
+
+				// As soon as space is pressed
+				finalTime = clock(); // Record time after solve
+			} 
+			else 
+			{
+				clearLine();
+				std::cout << "Solve!" << std::endl;
+				showCursor();
+				return double(double(finalTime - initialTime) / double(CLOCKS_PER_SEC));
+			}
 		}
-		// After leaving space bar, print time passed.
-		std::cout << "Time passed is " << double(double(finalTime - initialTime) / double(CLOCKS_PER_SEC));
-		return double(double(finalTime - initialTime) / double(CLOCKS_PER_SEC));
+
+		if (ePressed() == false) 
+		{
+			showCursor();
+			break;
+		}
+
+		if (rPressed() == false) 
+		{
+			showCursor();
+			break;
+		}
+
+		if (finalTime != 0) {
+			clearLine();
+			std::cout << double(double(clock() - initialTime) / double(CLOCKS_PER_SEC)) << "s";
+		}
 	}
 
+	showCursor();
 	return 0.0;
+}
+
+void scrambleAndPrint(std::vector<char> &scramble)
+{
+    clearScreen();
+
+    scramble = scrambler();
+    for (int i = 0; i < scramble.size(); i++)
+    {
+        // Prints scramble
+        std::cout << scramble.at(i);
+    }
+
+
+    std::cout << "\n\n";
+}
+
+void clearScreen()
+{
+	std::cout << "\e[1;1H\e[2J";
+}
+
+void clearLine()
+{
+	std::cout << "\e[0G\e[0J";
+}
+
+void showCursor()
+{
+	std::cout << "\e[?25h";
+}
+
+void hideCursor()
+{
+	std::cout << "\e[?25l";
 }
 
 void runTimer(char *scrambleArray)
 {
-	// printScramble(scrambleArray);
+#ifndef _WIN32
+	struct termios original;
+    configureTerminal(original);
+#endif
+
 	srand(time(0));
-	std::vector<char> scramble = scrambler();
+	std::vector<char> scramble;
+	
+	scrambleAndPrint(scramble);
+
 	double timeTaken;
-	for (int i = 0; i < scramble.size(); i++)
-	{
-		// Prints scramble
-		std::cout << scramble.at(i);
-	}
-	std::cout << "\n\n";
 
-	while (rPressed() == false && spacePressed() == false && ePressed() == false)
-	{
-		// While r is not pressed, space is not pressed and e is not pressed, do nothing
-		doNothing();
-	}
-	while (rPressed() == true && ePressed() == false && spacePressed() == false)
-	{
-		// While r is pressed, space is not pressed and e is not pressed, do nothing
-		doNothing();
-	}
-	if (rPressed() == false && ePressed() == false && spacePressed() == false)
-	{
-		// After releasing r, clear screen and return to main()
-		system("cls");
-	}
-	while (ePressed() == false && spacePressed() == false && rPressed() == false)
-	{
-		// While e is pressed, space is not pressed, r is not pressed, do nothing
-		doNothing();
-	}
-	if (ePressed() == true && spacePressed() == false && rPressed() == false)
-	{
-		// If e is pressed, the program will stop execution
-		exit(0);
-	}
-
-	while (spacePressed() == false)
-	{
-		// Until space bar is not pressed keep doing nothing
-		doNothing();
-	}
-	if (spacePressed() == true)
-	{
-		// As soon as space is pressed enter this if condition
-		std::cout << "Space pressed!" << std::endl;
-		while (spacePressed() == true)
-		{
-			// Once this loop is entered it will keep doing nothing until space is pressed
-			doNothing();
-		}
-	}
-
-	// The below code pushes scramble and solve to external file for more calculations
-	timeTaken = phaseOne();
-	std::ofstream file;
-	file.open("main/times.txt", std::ios::app);
-	for (int i = 0; i < scramble.size(); i++)
-	{
-		file << scramble.at(i);
-	}
-	file << ":: " << timeTaken << "s"
-		 << "\n";
-	file.close();
-
-	// std::cout << "Inside phaseTwo() timer" << std::endl;
 	while (true)
 	{
-		// After phaseOne() runs until R is not pressed, do nothing
 		if (rPressed() == false)
 		{
-			doNothing();
-			// Keep checking whether e is not pressed or not
-			if (ePressed() == true)
-			{
-				// If e is pressed exit the program
-				exit(0);
-			}
+			// After releasing r, clear screen and return scramble again
+			scrambleAndPrint(scramble);
 		}
-		// If r is pressed, enter else if statement
-		else if (rPressed() == true)
+
+		if (ePressed() == false)
 		{
-			while (rPressed() == true)
-			{
-				// Once r is pressed, keep doing nothing if r is pressed more than once
-				doNothing();
-			}
-			// Clear terminal after doing all this
-			system("cls");
+
+#ifndef _WIN32
+			resetTerminal(original);
+#endif
+		// If e is pressed, the program will stop execution
+			exit(0);
 		}
+
+		if (spacePressed() == false)
+		{
+			// As soon as space is pressed enter this if condition
+			std::cout << "Ready!" << std::endl;
+
+			// The below code pushes scramble and solve to external file for more calculations
+			timeTaken = phaseOne();
+
+			// After leaving space bar, print time passed.
+			std::cout << "Time passed is " << timeTaken << "s" << std::endl;
+
+			std::ofstream file;
+			file.open("./times.txt", std::ios::app);
+			for (int i = 0; i < scramble.size(); i++)
+			{
+				file << scramble.at(i);
+			}
+			file << ":: " << timeTaken << "s"
+				<< "\n";
+			file.close();
+
+            scrambleAndPrint(scramble);
+        }
 	}
+
+#ifndef _WIN32
+	resetTerminal(original);
+#endif
 }
